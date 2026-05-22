@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import iconImg from '../assets/icon.png';
+import { isTokenExpired } from '../utils/jwtHelper';
 
 const emptyForm = { name: '', email: '', password: '' };
 const getErrorMessage = (e) => e?.response?.data?.message || e?.message || 'Authentication failed';
@@ -51,6 +52,13 @@ export default function Auth() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && !isTokenExpired(token)) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const toggleTheme = () => {
     setTheme((current) => {

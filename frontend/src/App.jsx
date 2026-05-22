@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Sidebar from './components/Sidebar';
 import ToastProvider from './components/ToastProvider';
 
+import { isTokenExpired } from './utils/jwtHelper';
+
 // Lazy load pages for optimized initial chunk delivery
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Auth = lazy(() => import('./pages/Auth'));
@@ -18,9 +20,11 @@ const PageLoader = () => (
 );
 
 function Layout({ children }) {
-  const isAuthenticated = !!localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  const isAuthenticated = token && !isTokenExpired(token);
 
   if (!isAuthenticated) {
+    if (token) localStorage.removeItem('token');
     return <Navigate to="/auth" />;
   }
 

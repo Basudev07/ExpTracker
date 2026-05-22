@@ -1,10 +1,23 @@
-import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
+import { Toaster, useToasterStore, toast } from 'react-hot-toast';
 
 export default function ToastProvider({ children }) {
+  const { toasts } = useToasterStore();
+
+  useEffect(() => {
+    const visibleToasts = toasts.filter((t) => t.visible);
+    if (visibleToasts.length > 2) {
+      const numberToDismiss = visibleToasts.length - 2;
+      for (let i = 0; i < numberToDismiss; i++) {
+        toast.dismiss(visibleToasts[i].id);
+      }
+    }
+  }, [toasts]);
+
   return (
     <>
       <Toaster
-        position="top-right"
+        position="bottom-right"
         reverseOrder={false}
         gutter={12}
         containerStyle={{
@@ -25,11 +38,14 @@ export default function ToastProvider({ children }) {
             fontSize: '14px',
             fontWeight: 600,
             lineHeight: 1.35,
-            minWidth: '280px',
-            maxWidth: '420px',
+
+            width: 'calc(100vw - 32px)',
+            maxWidth: '210px',
+
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
           },
+
           success: {
             duration: 3000,
             iconTheme: {
@@ -43,6 +59,7 @@ export default function ToastProvider({ children }) {
               color: 'hsl(var(--bc))',
             },
           },
+
           error: {
             duration: 4000,
             iconTheme: {
@@ -56,6 +73,7 @@ export default function ToastProvider({ children }) {
               color: 'hsl(var(--bc))',
             },
           },
+
           loading: {
             iconTheme: {
               primary: 'hsl(var(--p))',

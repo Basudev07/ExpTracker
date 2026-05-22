@@ -98,12 +98,39 @@ export default function Dashboard() {
   const [chartType, setChartType] = useState('bar');
   const navigate = useNavigate();
 
+  const now = useMemo(() => new Date(), []);
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  const availableMonths = useMemo(() => {
+    const list = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      list.push({
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        name: d.toLocaleDateString('en-IN', { month: 'long' }),
+      });
+    }
+    return list;
+  }, [now]);
+
+  const selectedMonthLabel = useMemo(() => {
+    const found = availableMonths.find(
+      (m) => m.month === selectedMonth && m.year === selectedYear
+    );
+    return found ? `${found.name} ${found.year}` : 'Current Month';
+  }, [selectedMonth, selectedYear, availableMonths]);
+
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
 
     const fetchOverview = async () => {
       try {
-        const response = await api.get('/dashboard');
+        const response = await api.get(
+          `/dashboard?month=${selectedMonth}&year=${selectedYear}`
+        );
         if (isMounted) {
           setData(response.data?.data || {});
         }
@@ -122,7 +149,7 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const chartData = useMemo(
     () => (data?.expenseDistribution || []).filter((item) => Number(item.amount) > 0),
@@ -174,9 +201,39 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="badge badge-outline badge-lg gap-2">
-            <FiClock />
-            Current Month
+          <div className="dropdown dropdown-end">
+            <button
+              tabIndex={0}
+              type="button"
+              className="badge badge-outline badge-lg gap-2 cursor-pointer hover:bg-base-200 hover:text-base-content transition-all font-semibold select-none py-3"
+            >
+              <FiClock className="text-primary" />
+              {selectedMonthLabel}
+              <FiChevronDown className="opacity-60" />
+            </button>
+            <ul
+              tabIndex={0}
+              className="menu dropdown-content z-[10] mt-3 w-56 rounded-box bg-base-100 p-2 shadow-2xl border border-base-300 font-medium"
+            >
+              {availableMonths.map((m) => (
+                <li key={`${m.year}-${m.month}`}>
+                  <button
+                    type="button"
+                    className={
+                      selectedMonth === m.month && selectedYear === m.year
+                        ? 'active font-semibold bg-primary text-primary-content'
+                        : ''
+                    }
+                    onClick={() => {
+                      setSelectedMonth(m.month);
+                      setSelectedYear(m.year);
+                    }}
+                  >
+                    {m.name} {m.year}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="dropdown dropdown-end">
@@ -276,7 +333,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-base-300 bg-base-100 p-5 shadow-lg">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -316,20 +373,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-base-300 bg-base-100 p-5 shadow-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-base-content/60">Transaction Mix</p>
-              <p className="text-2xl font-bold text-primary">
-                {totalTransactions}
-              </p>
-            </div>
-            <FiList className="text-3xl text-primary" />
-          </div>
-          <p className="mt-3 text-sm text-base-content/60">
-            Monthly income and expense entries recorded by the backend
-          </p>
-        </div>
+
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -581,7 +625,7 @@ export default function Dashboard() {
           {chartData.slice(0, 3).map((item) => (
             <div
               key={item.category}
-              className="card border border-base-300 bg-base-100 shadow-lg transition-all hover:shadow-xl"
+              className="card border border-base-300 bg-base-100 shadow-lg"
             >
               <div className="card-body">
                 <div className="flex items-center justify-between gap-4">
